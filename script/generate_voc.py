@@ -1,6 +1,8 @@
-import cPickle
+# import cPickle
+import pickle as cPickle
 
 f_train = open("local_train_splitByUser", "r")
+
 uid_dict = {}
 mid_dict = {}
 cat_dict = {}
@@ -34,8 +36,8 @@ for line in f_train:
         if (mid, m) not in item_carte_dict:
             item_carte_dict[(mid, m)] = 0
         item_carte_dict[(mid, m)] += 1
-    #print iddd
-    iddd+=1
+    # print iddd
+    iddd += 1
     for c in cat_list.split(""):
         if c not in cat_dict:
             cat_dict[c] = 0
@@ -44,11 +46,11 @@ for line in f_train:
             cate_carte_dict[(cat, c)] = 0
         cate_carte_dict[(cat, c)] += 1
 
-sorted_uid_dict = sorted(uid_dict.iteritems(), key=lambda x:x[1], reverse=True)
-sorted_mid_dict = sorted(mid_dict.iteritems(), key=lambda x:x[1], reverse=True)
-sorted_cat_dict = sorted(cat_dict.iteritems(), key=lambda x:x[1], reverse=True)
-sorted_item_carte_dict = sorted(item_carte_dict.iteritems(), key=lambda x:x[1], reverse=True)
-sorted_cate_carte_dict = sorted(cate_carte_dict.iteritems(), key=lambda x:x[1], reverse=True)
+sorted_uid_dict = sorted(uid_dict.items(), key=lambda x: x[1], reverse=True)
+sorted_mid_dict = sorted(mid_dict.items(), key=lambda x: x[1], reverse=True)
+sorted_cat_dict = sorted(cat_dict.items(), key=lambda x: x[1], reverse=True)
+sorted_item_carte_dict = sorted(item_carte_dict.items(), key=lambda x: x[1], reverse=True)
+sorted_cate_carte_dict = sorted(cate_carte_dict.items(), key=lambda x: x[1], reverse=True)
 
 uid_voc = {}
 index = 0
@@ -84,8 +86,8 @@ for key, value in sorted_cate_carte_dict:
     cate_carte_voc[key] = index
     index += 1
 
-cPickle.dump(uid_voc, open("uid_voc.pkl", "w"))
-cPickle.dump(mid_voc, open("mid_voc.pkl", "w"))
-cPickle.dump(cat_voc, open("cat_voc.pkl", "w"))
-cPickle.dump(item_carte_voc, open("item_carte_voc.pkl", "w"))
-cPickle.dump(cate_carte_voc, open("cate_carte_voc.pkl", "w"))
+cPickle.dump(uid_voc, open("uid_voc.pkl", "wb"))
+cPickle.dump(mid_voc, open("mid_voc.pkl", "wb"))
+cPickle.dump(cat_voc, open("cat_voc.pkl", "wb"))
+cPickle.dump(item_carte_voc, open("item_carte_voc.pkl", "wb"))
+cPickle.dump(cate_carte_voc, open("cate_carte_voc.pkl", "wb"))

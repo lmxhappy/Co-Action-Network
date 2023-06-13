@@ -1,16 +1,23 @@
+# coding:utf-8
+
 import numpy
 import json
-import cPickle as pkl
+# import cPickle as pkl
+import pickle as pkl
 import random
 
 import gzip
 
 import shuffle
 
+
 def unicode_to_utf8(d):
-    return dict((key.encode("UTF-8"), value) for (key,value) in d.items())
+    return dict((key.encode("UTF-8"), value) for (key, value) in d.items())
+
+
 def dict_unicode_to_utf8(d):
-    return dict(((key[0].encode("UTF-8"), key[1].encode("UTF-8")), value) for (key,value) in d.items())
+    return dict(((key[0].encode("UTF-8"), key[1].encode("UTF-8")), value) for (key, value) in d.items())
+
 
 def load_dict(filename):
     try:
@@ -51,17 +58,17 @@ class DataIterator:
         else:
             self.source = fopen(source, 'r')
         self.source_dicts = []
-        #for source_dict in [uid_voc, mid_voc, cat_voc, cat_voc, cat_voc]:# 'item_carte_voc.pkl', 'cate_carte_voc.pkl']:
-        for source_dict in [uid_voc, mid_voc, cat_voc, 'item_carte_voc.pkl', 'cate_carte_voc.pkl']:
+        # for source_dict in [uid_voc, mid_voc, cat_voc, cat_voc, cat_voc]:# 'item_carte_voc.pkl', 'cate_carte_voc.pkl']:
+        for source_dict in [uid_voc, mid_voc, cat_voc, '../data/item_carte_voc.pkl', '../data/cate_carte_voc.pkl']:
             self.source_dicts.append(load_dict(source_dict))
 
-        f_meta = open("item-info", "r")
+        f_meta = open("../data/item-info", "r")
         meta_map = {}
         for line in f_meta:
             arr = line.strip().split("\t")
             if arr[0] not in meta_map:
                 meta_map[arr[0]] = arr[1]
-        self.meta_id_map ={}
+        self.meta_id_map = {}
         for key in meta_map:
             val = meta_map[key]
             if key in self.source_dicts[1]:
@@ -74,7 +81,7 @@ class DataIterator:
                 cat_idx = 0
             self.meta_id_map[mid_idx] = cat_idx
 
-        f_review = open("reviews-info", "r")
+        f_review = open("../data/reviews-info", "r")
         self.mid_list_for_random = []
         for line in f_review:
             arr = line.strip().split("\t")
@@ -111,7 +118,7 @@ class DataIterator:
 
     def reset(self):
         if self.shuffle:
-            self.source= shuffle.main(self.source_orig, temporary=True)
+            self.source = shuffle.main(self.source_orig, temporary=True)
         else:
             self.source.seek(0)
 
@@ -125,7 +132,7 @@ class DataIterator:
         target = []
 
         if len(self.source_buffer) == 0:
-            for k_ in xrange(self.k):
+            for k_ in range(self.k):
                 ss = self.source.readline()
                 if ss == "":
                     break
@@ -147,7 +154,6 @@ class DataIterator:
             raise StopIteration
 
         try:
-
             # actual work here
             while True:
 
@@ -194,7 +200,7 @@ class DataIterator:
                     noclk_tmp_cat = []
                     noclk_index = 0
                     while True:
-                        noclk_mid_indx = random.randint(0, len(self.mid_list_for_random)-1)
+                        noclk_mid_indx = random.randint(0, len(self.mid_list_for_random) - 1)
                         noclk_mid = self.mid_list_for_random[noclk_mid_indx]
                         if noclk_mid == pos_mid:
                             continue
@@ -210,7 +216,7 @@ class DataIterator:
                 if self.label_type == 1:
                     target.append([float(ss[0])])
                 else:
-                    target.append([float(ss[0]), 1-float(ss[0])])
+                    target.append([float(ss[0]), 1 - float(ss[0])])
 
                 if len(source) >= self.batch_size or len(target) >= self.batch_size:
                     break
@@ -222,5 +228,3 @@ class DataIterator:
             source, target = self.next()
 
         return source, target
-
-

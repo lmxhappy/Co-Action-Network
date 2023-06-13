@@ -14,6 +14,9 @@ python: 2.7
 higher version of tensorflow and python3 will be supported soon!
 
 ## Getting Started
+prepare data:
+sh prepare_data.sh
+
 training:
 
 CUDA_VISIBLE_DEVICES=0  python  script/train.py train {model}

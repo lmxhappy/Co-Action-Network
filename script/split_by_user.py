@@ -11,10 +11,8 @@ while True:
     if noclk_line == "" or clk_line == "":
         break
     if rand_int == 2:
-        print >> ftest, noclk_line
-        print >> ftest, clk_line
+        ftest.write(noclk_line + "\n")
+        ftest.write(clk_line + "\n")
     else:
-        print >> ftrain, noclk_line
-        print >> ftrain, clk_line
-        
-
+        ftrain.write(noclk_line + "\n")
+        ftrain.write(clk_line + "\n")

@@ -1,10 +1,13 @@
-import numpy
-from data_iterator import DataIterator
-import tensorflow as tf
-from model import *
-import time
+# coding: utf-8
+
 import random
 import sys
+import time
+
+import numpy
+
+from data_iterator import DataIterator
+from model import *
 from utils import *
 
 EMBEDDING_DIM = 18
@@ -12,7 +15,8 @@ HIDDEN_SIZE = 18 * 2
 ATTENTION_SIZE = 18 * 2
 best_auc = 0.0
 
-def prepare_data(input, target, maxlen = None, return_neg = False):
+
+def prepare_data(input, target, maxlen=None, return_neg=False):
     # x: a list of sentences
     lengths_x = [len(s[4]) for s in input]
     seqs_mid = [inp[3] for inp in input]
@@ -69,7 +73,8 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
     item_carte = numpy.zeros((n_samples, maxlen_x)).astype('int64')
     cate_carte = numpy.zeros((n_samples, maxlen_x)).astype('int64')
     mid_mask = numpy.zeros((n_samples, maxlen_x)).astype('float32')
-    for idx, [s_x, s_y, no_sx, no_sy, i_c, c_c] in enumerate(zip(seqs_mid, seqs_cat, noclk_seqs_mid, noclk_seqs_cat, seqs_item_carte, seqs_cate_carte)):
+    for idx, [s_x, s_y, no_sx, no_sy, i_c, c_c] in enumerate(
+            zip(seqs_mid, seqs_cat, noclk_seqs_mid, noclk_seqs_cat, seqs_item_carte, seqs_cate_carte)):
         mid_mask[idx, :lengths_x[idx]] = 1.
         mid_his[idx, :lengths_x[idx]] = s_x
         cat_his[idx, :lengths_x[idx]] = s_y
@@ -85,13 +90,14 @@ def prepare_data(input, target, maxlen = None, return_neg = False):
     carte = numpy.stack([item_carte, cate_carte], axis=1)
 
     if return_neg:
-        return uids, mids, cats, mid_his, cat_his, mid_mask, numpy.array(target), numpy.array(lengths_x), noclk_mid_his, noclk_cat_his, carte
+        return uids, mids, cats, mid_his, cat_his, mid_mask, numpy.array(target), numpy.array(
+            lengths_x), noclk_mid_his, noclk_cat_his, carte
 
     else:
         return uids, mids, cats, mid_his, cat_his, mid_mask, numpy.array(target), numpy.array(lengths_x), carte
 
-def eval(sess, test_data, model, model_path):
 
+def eval(sess, test_data, model, model_path):
     loss_sum = 0.
     accuracy_sum = 0.
     aux_loss_sum = 0.
@@ -99,14 +105,16 @@ def eval(sess, test_data, model, model_path):
     stored_arr = []
     for src, tgt in test_data:
         nums += 1
-        uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats, carte = prepare_data(src, tgt, return_neg=True)
-        prob, loss, acc, aux_loss = model.calculate(sess, [uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats, carte])
+        uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats, carte = prepare_data(src, tgt,
+                                                                                                               return_neg=True)
+        prob, loss, acc, aux_loss = model.calculate(sess, [uids, mids, cats, mid_his, cat_his, mid_mask, target, sl,
+                                                           noclk_mids, noclk_cats, carte])
         loss_sum += loss
         aux_loss_sum = aux_loss
         accuracy_sum += acc
         prob_1 = prob[:, 0].tolist()
         target_1 = target[:, 0].tolist()
-        for p ,t in zip(prob_1, target_1):
+        for p, t in zip(prob_1, target_1):
             stored_arr.append([p, t])
     test_auc = calc_auc(stored_arr)
     accuracy_sum = accuracy_sum / nums
@@ -115,66 +123,83 @@ def eval(sess, test_data, model, model_path):
     global best_auc
     if best_auc < test_auc:
         best_auc = test_auc
-        #model.save(sess, model_path)
+        # model.save(sess, model_path)
     return test_auc, loss_sum, accuracy_sum, aux_loss_sum
 
+
 def train(
-        train_file = "local_train_splitByUser",
-        test_file = "local_test_splitByUser",
-        uid_voc = "uid_voc.pkl",
-        mid_voc = "mid_voc.pkl",
-        cat_voc = "cat_voc.pkl",
-        batch_size = 128,
-        maxlen = 100,
-        test_iter = 8400,
-        save_iter = 8400,
-        model_type = 'DNN',
-        seed = 2,
+        train_file="../data/local_train_splitByUser",
+        test_file="../data/local_test_splitByUser",
+        uid_voc="../data/uid_voc.pkl",
+        mid_voc="../data/mid_voc.pkl",
+        cat_voc="../data/cat_voc.pkl",
+        batch_size=128,
+        maxlen=100,
+        test_iter=8400,
+        save_iter=8400,
+        model_type='DNN',
+        seed=2,
 ):
     model_path = "dnn_save_path/ckpt_noshuff" + model_type + str(seed)
     best_model_path = "dnn_best_model/ckpt_noshuff" + model_type + str(seed)
     gpu_options = tf.GPUOptions(allow_growth=True)
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
         label_type = 1
-        train_data = DataIterator(train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False, label_type=label_type)
-        test_data = DataIterator(test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, label_type=label_type)
+        train_data = DataIterator(train_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, shuffle_each_epoch=False,
+                                  label_type=label_type)
+
+        # todo
+        # test_data = DataIterator(test_file, uid_voc, mid_voc, cat_voc, batch_size, maxlen, label_type=label_type)
         n_uid, n_mid, n_cat, n_carte = train_data.get_n()
         if model_type == 'DNN':
-            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,use_softmax=False)
+            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_softmax=False)
         elif model_type == 'Cartesion':
-            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,use_softmax=False, use_cartes=True)
+            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_softmax=False, use_cartes=True)
         elif model_type == 'CAN+Cartesion':
-            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_coaction=True, use_cartes=True)
+            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_coaction=True, use_cartes=True)
         elif model_type == 'CAN':
-            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_coaction=True)
+            model = Model_DNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_coaction=True)
         elif model_type == 'PNN':
-            model = Model_PNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_PNN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_softmax=False)
         elif model_type == 'ONN':
-            model = Model_ONN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_ONN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_softmax=False)
         elif model_type == 'Wide':
             model = Model_WideDeep(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'NCF':
             model = Model_NCF(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'FM':
-            model = Model_FM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_FM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                             use_softmax=False)
         elif model_type == 'FFM':
-            model = Model_FFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_FFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                              use_softmax=False)
         elif model_type == 'DeepFM':
-            model = Model_DeepFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_DeepFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                                 use_softmax=False)
         elif model_type == 'DeepFFM':
-            model = Model_DeepFFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_DeepFFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                                  use_softmax=False)
         elif model_type == 'xDeepFM':
-            model = Model_xDeepFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_softmax=False)
+            model = Model_xDeepFM(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE,
+                                  use_softmax=False)
         elif model_type == 'ONN':
             model = Model_ONN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'DIN':
             model = Model_DIN(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'DIEN':
-            model = Model_DIN_V2_Gru_Vec_attGru_Neg(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
+            model = Model_DIN_V2_Gru_Vec_attGru_Neg(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE,
+                                                    ATTENTION_SIZE)
         elif model_type == 'CAN+DIEN':
-            model = Model_DIN_V2_Gru_Vec_attGru_Neg(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE, use_coaction=True)
+            model = Model_DIN_V2_Gru_Vec_attGru_Neg(n_uid, n_mid, n_cat, n_carte, EMBEDDING_DIM, HIDDEN_SIZE,
+                                                    ATTENTION_SIZE, use_coaction=True)
         else:
-            print ("Invalid model_type : %s"% model_type)
+            print("Invalid model_type : %s" % model_type)
             return
         print("Model: ", model_type)
         sess.run(tf.global_variables_initializer())
@@ -190,32 +215,43 @@ def train(
             accuracy_sum = 0.
             aux_loss_sum = 0.
             for src, tgt in train_data:
-                uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats, carte = prepare_data(src, tgt, maxlen, return_neg=True)
-                loss, acc, aux_loss = model.train(sess, [uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, lr, noclk_mids, noclk_cats, carte])
+                uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, noclk_mids, noclk_cats, carte = prepare_data(
+                    src, tgt, maxlen, return_neg=True)
+                loss, acc, aux_loss = model.train(sess, [uids, mids, cats, mid_his, cat_his, mid_mask, target, sl, lr,
+                                                         noclk_mids, noclk_cats, carte])
                 loss_sum += loss
                 accuracy_sum += acc
                 aux_loss_sum += aux_loss
                 iter += 1
                 sys.stdout.flush()
                 if (iter % 100) == 0:
-                    print('iter: %d ----> train_loss: %.4f ---- train_accuracy: %.4f ---- train_aux_loss: %.4f' %  (iter, loss_sum / 100, accuracy_sum / 100, aux_loss_sum / 100))
+                    print('iter: %d ----> train_loss: %.4f ---- train_accuracy: %.4f ---- train_aux_loss: %.4f' % (
+                    iter, loss_sum / 100, accuracy_sum / 100, aux_loss_sum / 100))
                     loss_sum = 0.0
                     accuracy_sum = 0.0
                     aux_loss_sum = 0.0
-                if (iter % test_iter) == 0:
-                    auc_, loss_, acc_, aux_ = eval(sess, test_data, model, best_model_path) 
-                    print('iter: %d --- test_auc: %.4f ---- test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f' % (iter, auc_, loss_, acc_, aux_))
-                    loss_sum = 0.0
-                    accuracy_sum = 0.0
-                    aux_loss_sum = 0.0
+
+                # todo
+                # if (iter % test_iter) == 0:
+                #     auc_, loss_, acc_, aux_ = eval(sess, test_data, model, best_model_path)
+                #     print(
+                #         'iter: %d --- test_auc: %.4f ---- test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f' % (
+                #         iter, auc_, loss_, acc_, aux_))
+                #     loss_sum = 0.0
+                #     accuracy_sum = 0.0
+                #     aux_loss_sum = 0.0
+
                 if (iter % save_iter) == 0:
-                    print('save model iter: %d' %(iter))
-                    model.save(sess, model_path+"--"+str(iter))
+                    print('save model iter: %d' % (iter))
+                    model.save(sess, model_path + "--" + str(iter))
+
             lr *= 0.5
+
 
 def count_flops(graph):
     flops = tf.profiler.profile(graph, options=tf.profiler.ProfileOptionBuilder.float_operation())
     print('FLOPs: {}'.format(flops.total_float_ops))
+
 
 def count():
     total_parameters = 0
@@ -228,18 +264,18 @@ def count():
         total_parameters += variable_parameters
     print("Prameter: ", total_parameters)
 
-def test(
-        train_file = "local_train_splitByUser",
-        test_file = "local_test_splitByUser",
-        uid_voc = "uid_voc.pkl",
-        mid_voc = "mid_voc.pkl",
-        cat_voc = "cat_voc.pkl",
-        batch_size = 128,
-        maxlen = 100,
-        model_type = 'DNN',
-	seed = 2
-):
 
+def test(
+        train_file="local_train_splitByUser",
+        test_file="local_test_splitByUser",
+        uid_voc="uid_voc.pkl",
+        mid_voc="mid_voc.pkl",
+        cat_voc="cat_voc.pkl",
+        batch_size=128,
+        maxlen=100,
+        model_type='DNN',
+        seed=2
+):
     model_path = "dnn_best_model/ckpt_noshuff" + model_type + str(seed)
     gpu_options = tf.GPUOptions(allow_growth=True)
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
@@ -251,7 +287,7 @@ def test(
         elif model_type == 'PNN':
             model = Model_PNN(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'Wide':
-	    model = Model_WideDeep(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
+            model = Model_WideDeep(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'DIN':
             model = Model_DIN(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'DIN-V2-gru-att-gru':
@@ -262,13 +298,17 @@ def test(
             model = Model_DIN_V2_Gru_QA_attGru(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         elif model_type == 'DIN-V2-gru-vec-attGru':
             model = Model_DIN_V2_Gru_Vec_attGru(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
-	elif model_type == 'DIEN':
+        elif model_type == 'DIEN':
             model = Model_DIN_V2_Gru_Vec_attGru_Neg(n_uid, n_mid, n_cat, EMBEDDING_DIM, HIDDEN_SIZE, ATTENTION_SIZE)
         else:
-            print ("Invalid model_type : %s", model_type)
+            print("Invalid model_type : %s", model_type)
             return
         model.restore(sess, model_path)
-        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f' % eval(sess, test_data, model, model_path))
+        print('test_auc: %.4f ----test_loss: %.4f ---- test_accuracy: %.4f ---- test_aux_loss: %.4f' % eval(sess,
+                                                                                                            test_data,
+                                                                                                            model,
+                                                                                                            model_path))
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 4:
@@ -284,5 +324,3 @@ if __name__ == '__main__':
         test(model_type=sys.argv[2], seed=SEED)
     else:
         print('do nothing...')
-
-
